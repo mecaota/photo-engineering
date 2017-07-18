@@ -20,8 +20,6 @@ def load_image(filename, fileex):
     if image is None:
         raise ValueError("'" + path +"'" + "はこのプログラムでは扱えないファイルです。このファイルはパスされます。")
     print("'" + path +"'" + "が読み込まれました。処理中です。")
-    #グレー画像を保存
-    save_image(image, "gray", filename)
     #opencv型イメージを返す
     return image
 
@@ -31,16 +29,21 @@ def save_image(image, type, filename):
     if type == "gray":
         word = "グレースケール"
         pathfraze = "gray_image/gray_"
+        fileex = png
     elif type == "binary":
         word = "2値"
         pathfraze = "binary_image/binary_"
+        fileex = png
     else:
         print("Error:" + type +"画像保存処理でエラーが発生しました。")
         return 0
-    path = create_path(pathfraze, filename, png)
+    path = create_path(pathfraze, filename, fileex)
     #画像を保存
     cv2.imwrite(path, image)
     print(word + "化したオリジナル画像が保存されました >> "+ path)
+
+def save_textline(str, filename):
+    return 0
 
 ###ヒストグラム生成##
 def create_graph(hist, filename):
@@ -68,7 +71,7 @@ def compare_pixelsize(hist, image_size):
 def create_binaryimage(image, hist, filename):
     thresh = compare_pixelsize(hist, image.size)
     ret, binary_image = cv2.threshold(image, thresh, 255, cv2.THRESH_BINARY)
-    save_image(binary_image, "binary", filename)
+    return binary_image
 
 ###メイン###
 if __name__ == '__main__':
@@ -79,12 +82,14 @@ if __name__ == '__main__':
 
     #for文内で見つかったファイルを逐次処理
     for i in dir_list:
-        #グレー画像読み込み
+        #画像ディレクトリ読み込み
         filename = os.path.splitext(i)[0]
         fileex = os.path.splitext(i)[1]
         #画像読み込み・保存
         try:
+            #グレースケール画像として読み込み
             image = load_image(filename, fileex)
+            save_image(image, "gray", filename)
         except ValueError as e:
             print(e)
             print_line()
@@ -94,7 +99,9 @@ if __name__ == '__main__':
         #グラフ処理・保存
         create_graph(hist, filename)
         #2値化処理・保存
-        create_binaryimage(image, hist, filename)
-
-        print_line()
+        binary_image = create_binaryimage(image, hist, filename)
+        save_image(binary_image, "binary", filename)
+        #連結成分ラベリング＆数え上げ
+        pixelsum = cv2.connectedComponents(binary_image,)[0]
+        print(pixelsum)
     print("Program finished"+"\n")
